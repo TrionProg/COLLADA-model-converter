@@ -226,6 +226,8 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
         Err( e ) => return Err( format!("Can not write file \"{}\" : {:?}", outFileName, e) ),
     };
 
+    /*
+
     for geometry in geometries.iter(){
         match *geometry{
             Geometry::P3N3T0C2 { ref material, ref lod } => {
@@ -286,7 +288,7 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
             //_=>{},
         }
     }
-
+    */
 
     Ok(())
 }

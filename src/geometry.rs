@@ -4,18 +4,20 @@ use collada::{Parser,skip,waitStartTag,waitEndTag};
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry as BTreeMapEntry;
 
-use source::Source;
-use mesh::{GeometryType, Mesh, Lod, VertexP3, VertexP3N3, VertexP3N3T0C2};
+use source::{SourceData,Source};
+use mesh::{GeometryType, Mesh, VertexP3, VertexP3N3, VertexP3N3T0C2};
 
-pub enum Geometry{
-    P3N3{
-        material:Option<String>,
-        lod:Lod<VertexP3N3>,
-    },
-    P3N3T0C2{
-        material:Option<String>,
-        lod:Lod<VertexP3N3T0C2>,
-    },
+use byteorder::{LittleEndian, WriteBytesExt};
+
+pub enum ConvertTo{
+    to_f32,
+    to_i32,
+}
+
+pub struct Geometry{
+    material:Option<String>,
+    data:Vec<u8>,
+    polygonsCount:usize,
 }
 
 impl Geometry{
@@ -190,40 +192,32 @@ impl Geometry{
                                                 };
 
                                                 match semantic.as_str(){
-                                                    "VERTEX" => match *source{
-                                                        Source::XYZ ( ref sourceType, _ ) => {
-                                                            if sourceType.as_str()!="positions" {
-                                                                return Err( format!("VERTEX Slot must be *-position source, found {}", sourceType) );
-                                                            }
+                                                    "VERTEX" | "NORMAL" | "TEXCOORD" => {
+                                                        vertexSemantics.push_str(&semantic);
+                                                        vertexSemantics.push('(');
 
-                                                            vertexSemantics.push_str("p(xyz) ");
-                                                        },
-                                                        _ => return Err( String::from("VERTEX Slot must be XYZ *-position source") ),
-                                                    },
-                                                    "NORMAL" => match *source{
-                                                        Source::XYZ ( ref sourceType, _ ) => {
-                                                            if sourceType.as_str()!="normals" {
-                                                                return Err( format!("NORMAL Slot must be *-normals source, found {}", sourceType) );
+                                                        for sourceData in source.data.iter() {
+                                                            match *sourceData {
+                                                                SourceData::Float( ref paramName, _ ) => {
+                                                                    vertexSemantics.push('f');
+                                                                    vertexSemantics.push_str(paramName);
+                                                                },
+                                                                SourceData::Int( ref paramName, _ ) => {
+                                                                    vertexSemantics.push('i');
+                                                                    vertexSemantics.push_str(paramName);
+                                                                },
                                                             }
+                                                        }
 
-                                                            vertexSemantics.push_str("n(xyz) ");
-                                                        },
-                                                        _ => return Err( String::from("NORMAL Slot must be XYZ *-normals source") ),
+                                                        vertexSemantics.push_str(") ");
+                                                        sourcesList.push( (source, false) );
                                                     },
-                                                    "TEXCOORD" => match *source{
-                                                        Source::UV ( ref sourceType, ref ti, _ ) => {
-                                                            if sourceType.as_str()!="map" {
-                                                                return Err( format!("TEXCOORD Slot must be *-map source, found {}", sourceType) );
-                                                            }
+                                                    _ => {
+                                                        println!("Source \"{}\" is ignored", semantic);
 
-                                                            vertexSemantics.push_str(&format!("t{}c(uv) ",ti));
-                                                        },
-                                                        _ => return Err( String::from("TEXCOORD Slot must be XYZ *-normals source") ),
-                                                    },
-                                                    _ => return Err( format!("Unknown source semantic \"{}\"", semantic) ),
+                                                        sourcesList.push( (source, true) );
+                                                    }
                                                 }
-
-                                                sourcesList.push( source );
 
                                                 try!(waitEndTag( parser, "input" ));
                                             },
@@ -301,26 +295,54 @@ impl Geometry{
 
                             let vertexSemantics=vertexSemantics.trim_matches(' ');
 
-                            match vertexSemantics{
-                                "p(xyz) n(xyz)" => {
-                                    let lod:Lod<VertexP3N3>=try!(Lod::construct(sourcesList, polygonIndexes, polygonsCount, GeometryType::Triangles));
-                                    geometries.push( Geometry::P3N3{
-                                        material:specifiedMaterial,
-                                        lod:lod,
-                                    });
-                                },
-                                "p(xyz) n(xyz) t0c(uv)" => {
-                                    let lod:Lod<VertexP3N3T0C2>=try!(Lod::construct(sourcesList, polygonIndexes, polygonsCount, GeometryType::Triangles));
-                                    println!("{}",lod.vertices.len());
-                                    geometries.push( Geometry::P3N3T0C2{
-                                        material:specifiedMaterial,
-                                        lod:lod,
-                                    });
-                                },
-                                _ => return Err( format!("Unknown vertex semantics: {}", vertexSemantics) ),
+                            println!("{}",vertexSemantics);
+
+                            let convertTOSemantic=match vertexSemantics{
+                                "VERTEX(fXfYfZ) NORMAL(fXfYfZ) TEXCOORD(fSfT)" => "f32 f32 f32 f32 f32 f32 f32 f32",
+                                _ => return Err( format!("Unknown vertex semantic \"{}\"", vertexSemantics) ),
+                            };
+
+                            let mut convertTOSemanticIter=convertTOSemantic.split(' ');
+
+                            let mut convertAsList=Vec::new();
+                            for &(source, ignore) in sourcesList.iter() {
+                                if ignore {
+                                    for sourceData in source.data.iter() {
+                                        convertAsList.push(None);
+                                    }
+                                }else{
+                                    for sourceData in source.data.iter() {
+                                        match convertTOSemanticIter.next() {
+                                            Some( t ) => {
+                                                match t{
+                                                    "f32" => convertAsList.push( Some((sourceData, ConvertTo::to_f32)) ),
+                                                    "i32" => convertAsList.push( Some((sourceData, ConvertTo::to_i32)) ),
+                                                    _ => return Err( String::from("tmperr") ),
+                                                }
+                                            },
+                                            None => {},
+                                        }
+                                    }
+                                }
                             }
+
+                            for convertAs in convertAsList.iter(){
+                                match *convertAs {
+                                    Some( ( _ , ref convertTo ) ) => {
+                                        match *convertTo {
+                                            ConvertTo::to_f32 => println!("to f32"),
+                                            ConvertTo::to_i32 => println!("to i32"),
+                                        }
+                                    },
+                                    None => println!("ignore"),
+                                }
+                            }
+
+                            let geometry=Geometry::constructTriangles(convertAsList, polygonIndexes, polygonsCount)?;
+
+                            geometries.push( geometry );
                         },
-                        _ => try!( skip( parser, name.local_name) ),
+                        _ => skip( parser, name.local_name)?,
                     }
                 },
                 XmlEvent::EndElement { name } => {
@@ -335,13 +357,66 @@ impl Geometry{
 
         Ok(geometries)
     }
+
+    pub fn constructTriangles(convertAsList:Vec< Option<(&SourceData, ConvertTo)> >, polygonIndexes:Vec<usize>, polygonsCount:usize) -> Result<Geometry, String>{
+        if convertAsList.len()*polygonsCount*3 != polygonIndexes.len() {
+            println!("{} {} {}",convertAsList.len(), polygonsCount, polygonIndexes.len());
+            return Err( String::from("convertAsList.len()*polygonsCount*3 != polygonIndexes.len()") );
+        }
+
+
+        let mut geometryData=Vec::with_capacity(convertAsList.len()*polygonsCount*3*4);
+
+        let mut piIter=polygonIndexes.iter();
+
+        for i in 0..polygonsCount*3{
+            for convertAs in convertAsList.iter() {
+                match *convertAs {
+                    Some( (sourceData, ref convertTo) ) => {
+                        let index=match piIter.next(){
+                            Some( i ) => i.clone(),
+                            None => return Err(String::from("Unexpected end of polygon indexes")),
+                        };
+
+                        match *sourceData{
+                            SourceData::Float( _ , ref data) => {
+                                match *convertTo {
+                                    ConvertTo::to_f32 =>
+                                        geometryData.write_f32::<LittleEndian>(data[index]).unwrap(),
+                                    ConvertTo::to_i32 =>
+                                        geometryData.write_i32::<LittleEndian>(data[index] as i32).unwrap(),
+                                }
+                            },
+                            SourceData::Int( _ , ref data) => {
+                                match *convertTo {
+                                    ConvertTo::to_f32 =>
+                                        geometryData.write_f32::<LittleEndian>(data[index] as f32).unwrap(),
+                                    ConvertTo::to_i32 =>
+                                        geometryData.write_i32::<LittleEndian>(data[index]).unwrap(),
+                                }
+                            },
+                        }
+                    },
+                    None => {
+                        if piIter.next().is_none() {
+                            return Err(String::from("Unexpected end of polygon indexes"));
+                        }
+                    },
+                }
+            }
+        }
+
+        Ok(
+            Geometry{
+                material:None,
+                data:geometryData,
+                polygonsCount:polygonsCount,
+            }
+        )
+    }
 }
 
-trait ColladaVertex{
-    fn indexesPerVertex() -> usize;
-    fn construct(sources:&Vec<&Source>, polygonIndexes:&[usize]) -> Self;
-}
-
+/*
 impl<V:ColladaVertex> Lod<V>{
     pub fn construct(sources:Vec<&Source>, polygonIndexes:Vec<usize>, polygonsCount:usize, geometryType:GeometryType) -> Result<Lod<V>, String>{
         if polygonsCount*V::indexesPerVertex()*geometryType.vertices()!=polygonIndexes.len(){
@@ -426,3 +501,4 @@ impl ColladaVertex for VertexP3N3T0C2{
         }
     }
 }
+*/

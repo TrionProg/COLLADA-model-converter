@@ -1,10 +1,13 @@
 use xml::reader::{EventReader, XmlEvent};
 use collada::{Parser,skip,waitStartTag,waitEndTag};
 
-pub enum Source{
-    XYZ ( String, Vec<f32> ),
-    UV( String, usize, Vec<f32> ),
-    Index( Vec<usize> ),
+pub enum SourceData{
+    Float(String, Vec<f32>),
+    Int(String, Vec<i32>),
+}
+
+pub struct Source{
+    pub data:Vec<SourceData>,
 }
 
 impl Source{
@@ -201,85 +204,45 @@ impl Source{
             return Err( String::from("stride!=params number") );
         }
 
-        if sourceType=="positions" || sourceType=="normals"{ //XYZ
-            if params.len()!=3 {
-                return Err( format!("{} source expects 3 coordinates(XYZ)", sourceType) );
+        let mut sourceData=Vec::with_capacity(params.len());
+        for (paramName, paramType) in params {
+            match paramType.as_ref(){
+                "float" => sourceData.push( SourceData::Float(paramName, Vec::with_capacity( count )) ),
+                "integer" => sourceData.push( SourceData::Int(paramName, Vec::with_capacity( count )) ),
+                _ => return Err( format!("Unknown data type: \"{}\"", paramType) ),
             }
-
-            for &( _ , ref paramType ) in params.iter(){
-                if paramType.as_str()!="float" {
-                    return Err( format!("{} Source must use float data type, found \"{}\"", sourceType, paramType) );
-                }
-            }
-
-            let mut buffer=Vec::with_capacity(dataCount);
-
-            let mut index=0;
-
-            for v in data.split(' '){
-                if v!=""{
-                    if index>=dataCount {
-                        return Err( String::from("Mesh data has more length than specified") );
-                    }
-
-                    buffer.push(
-                        match v.parse::<f32>(){
-                            Ok ( v ) => v,
-                            Err( e ) => return Err( format!("Can not parse mesh data {}", v) ),
-                        }
-                    );
-
-                    index+=1;
-                }
-            }
-
-            Ok( Source::XYZ( String::from(sourceType), buffer ) )
-        }else if sourceType.starts_with("map-0") { //UV
-            if params.len()!=2 {
-                return Err( format!("{} source expects 2 coordinates(UV)", sourceType) );
-            }
-
-            for &( _ , ref paramType ) in params.iter(){
-                if paramType.as_str()!="float" {
-                    return Err( format!("{} Source must use float data type, found \"{}\"", sourceType, paramType) );
-                }
-            }
-
-            let(_, tiStr)=sourceType.split_at("map".len()+1);
-
-            let ti=match tiStr.parse::<usize>(){
-                Ok ( l ) => l,
-                Err( _ ) => return Err( String::from("Can not parse texture index") ),
-            };
-
-            if ti!=0 {
-                return Err( format!("Multitexturing is not supported : {}", sourceType) );
-            }
-
-            let mut buffer=Vec::with_capacity(dataCount);
-
-            let mut index=0;
-
-            for v in data.split(' '){
-                if v!=""{
-                    if index>=dataCount {
-                        return Err( String::from("Mesh data has more length than specified") );
-                    }
-
-                    buffer.push(
-                        match v.parse::<f32>(){
-                            Ok ( v ) => v,
-                            Err( e ) => return Err( format!("Can not parse mesh data {}", v) ),
-                        }
-                    );
-
-                    index+=1;
-                }
-            }
-
-            Ok( Source::UV( String::from("map"), ti, buffer ) )
-        }else{
-            Err( format!("Unknown source type : {}", sourceType) )
         }
+
+        let mut sourceDataIndex=0;
+        for v in data.split(' '){
+            if v!=""{
+                match sourceData[sourceDataIndex] {
+                    SourceData::Float( _ , ref mut list) => {
+                        match v.parse::<f32>(){
+                            Ok ( f ) => list.push( f ),
+                            Err( e ) => return Err( format!("Can not parse mesh data as float {}", v) ),
+                        }
+                    },
+                    SourceData::Int( _ , ref mut list) => {
+                        match v.parse::<i32>(){
+                            Ok ( f ) => list.push( f ),
+                            Err( e ) => return Err( format!("Can not parse mesh data as int {}", v) ),
+                        }
+                    },
+                }
+
+                sourceDataIndex+=1;
+
+                if sourceDataIndex==sourceData.len() {
+                    sourceDataIndex=0;
+                }
+            }
+        }
+
+        Ok(
+            Source{
+                data:sourceData,
+            }
+        )
     }
 }
