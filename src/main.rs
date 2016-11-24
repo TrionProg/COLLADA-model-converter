@@ -1,4 +1,8 @@
 extern crate xml;
+extern crate rustc_serialize;
+extern crate bincode;
+extern crate bincode_ext;
+extern crate byteorder;
 
 use std::env;
 

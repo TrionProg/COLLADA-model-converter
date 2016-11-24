@@ -384,12 +384,12 @@ impl ColladaVertex for VertexP3N3{
             _ => panic!("not XYZ"),
         };
 
-        let pi=polygonIndexes[0];
-        let ni=polygonIndexes[1];
+        let pi=polygonIndexes[0]*3;
+        let ni=polygonIndexes[1]*3;
 
         VertexP3N3{
-            p:[ positions[pi+0], positions[pi+1], positions[pi+2], ],
-            n:[ normals[ni+0], normals[ni+1], normals[ni+2], ],
+            p:[ positions[pi+0], positions[pi+2], positions[pi+1], ],
+            n:[ normals[ni+0], normals[ni+2], normals[ni+1], ],
         }
     }
 }
@@ -415,13 +415,13 @@ impl ColladaVertex for VertexP3N3T0C2{
             _ => panic!("not UV"),
         };
 
-        let pi=polygonIndexes[0];
-        let ni=polygonIndexes[1];
-        let tci=polygonIndexes[2];
+        let pi=polygonIndexes[0]*3;
+        let ni=polygonIndexes[1]*3;
+        let tci=polygonIndexes[2]*2;
 
         VertexP3N3T0C2{
-            p:[ positions[pi+0], positions[pi+1], positions[pi+2], ],
-            n:[ normals[ni+0], normals[ni+1], normals[ni+2], ],
+            p:[ positions[pi+0], positions[pi+2], -positions[pi+1], ],
+            n:[ normals[ni+0], normals[ni+2], -normals[ni+1], ],
             tc:[ texcoords[tci+0], texcoords[tci+1], ],
         }
     }

@@ -1,6 +1,12 @@
+//use bincode::rustc_serialize::*;
+use byteorder::{ByteOrder, LittleEndian};
+use bincode_ext::byte_order::Le;
+
+use bincode::SizeLimit;
+use bincode::rustc_serialize::{encode, decode};
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{Write,BufReader};
 
 use xml::reader::{EventReader, XmlEvent};
 
@@ -129,6 +135,8 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
 
     let mut parser = Parser(reader);
 
+    let mut geometries=Vec::new();
+
     loop{
         match try!(parser.next()){
             XmlEvent::StartElement { name, .. } => {
@@ -162,10 +170,16 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
 
                                         println!("geom {} {}",&meshID, &meshName);
                                         //try!( skip( &mut parser, name.local_name) );
-                                        let geometryes = match Geometry::readCollada(&mut parser, &meshID) {
+                                        let parsedGeometryes = match Geometry::readCollada(&mut parser, &meshID) {
                                             Ok ( g ) => g,
                                             Err( e ) => return Err( format!("Geometry id : {} {}", meshID, e) ),
                                         };
+
+                                        for geometry in parsedGeometryes{
+                                            geometries.push(geometry);
+                                        }
+
+                                        //geometries.append(parsedGeometryes);
 
                                         loop{
                                             match try!(parser.next()) {
@@ -206,6 +220,73 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
             _ => {},
         }
     }
+
+    let mut outFile = match File::create(&outFileName){
+        Ok ( f ) => f,
+        Err( e ) => return Err( format!("Can not write file \"{}\" : {:?}", outFileName, e) ),
+    };
+
+    for geometry in geometries.iter(){
+        match *geometry{
+            Geometry::P3N3T0C2 { ref material, ref lod } => {
+
+                for i in 0..3 {
+                    println!("{} {} {}", lod.vertices[i].p[0], lod.vertices[i].p[1], lod.vertices[i].p[2]);
+                    println!("{} {} {}", lod.vertices[i].n[0], lod.vertices[i].n[1], lod.vertices[i].n[2]);
+                }
+
+                use byteorder::{LittleEndian, WriteBytesExt};
+
+                let mut buffer=vec![];
+                use byteorder::{BigEndian, ReadBytesExt};
+
+                buffer.write_u64::<LittleEndian>(lod.vertices.len() as u64);
+                for v in lod.vertices.iter(){
+                    buffer.write_f32::<LittleEndian>(v.p[0]);
+                    buffer.write_f32::<LittleEndian>(v.p[1]);
+                    buffer.write_f32::<LittleEndian>(v.p[2]);
+                    buffer.write_f32::<LittleEndian>(v.n[0]);
+                    buffer.write_f32::<LittleEndian>(v.n[1]);
+                    buffer.write_f32::<LittleEndian>(v.n[2]);
+                    buffer.write_f32::<LittleEndian>(v.tc[0]);
+                    buffer.write_f32::<LittleEndian>(v.tc[1]);
+                }
+
+                buffer.write_u8(b'\n');
+
+                outFile.write(&buffer[..]);
+            },
+            Geometry::P3N3 { ref material, ref lod } => {
+                for i in 0..3 {
+                    println!("{} {} {}", lod.vertices[i].p[0], lod.vertices[i].p[1], lod.vertices[i].p[2]);
+                    println!("{} {} {}", lod.vertices[i].n[0], lod.vertices[i].n[1], lod.vertices[i].n[2]);
+                }
+
+                use byteorder::{LittleEndian, WriteBytesExt};
+
+                let mut buffer=vec![];
+                use byteorder::{BigEndian, ReadBytesExt};
+
+                buffer.write_u64::<LittleEndian>(lod.vertices.len() as u64);
+                for v in lod.vertices.iter(){
+                    buffer.write_f32::<LittleEndian>(v.p[0]);
+                    buffer.write_f32::<LittleEndian>(v.p[1]);
+                    buffer.write_f32::<LittleEndian>(v.p[2]);
+                    buffer.write_f32::<LittleEndian>(v.n[0]);
+                    buffer.write_f32::<LittleEndian>(v.n[1]);
+                    buffer.write_f32::<LittleEndian>(v.n[2]);
+                }
+
+                buffer.write_u8(b'\n');
+                //let nl=[b'\n'];
+                //buffer.write(&nl[..]);
+
+                outFile.write(&buffer[..]);
+            },
+            //_=>{},
+        }
+    }
+
 
     Ok(())
 }

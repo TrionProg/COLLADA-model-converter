@@ -14,6 +14,7 @@ pub struct VertexP3{
     pub p:[f32; 3],
 }
 
+#[derive(RustcEncodable, RustcDecodable, PartialEq, Clone)]
 pub struct VertexP3N3{
     pub p:[f32; 3],
     pub n:[f32; 3],
