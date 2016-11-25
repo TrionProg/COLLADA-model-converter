@@ -226,69 +226,18 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
         Err( e ) => return Err( format!("Can not write file \"{}\" : {:?}", outFileName, e) ),
     };
 
-    /*
+    use byteorder::{LittleEndian, WriteBytesExt};
+    let mut lengthBuf=vec![];
+
+    lengthBuf.write_u64::<LittleEndian>(geometries.len() as u64);
+    outFile.write(&lengthBuf[..]);
 
     for geometry in geometries.iter(){
-        match *geometry{
-            Geometry::P3N3T0C2 { ref material, ref lod } => {
+        lengthBuf.write_u64::<LittleEndian>((geometry.polygonsCount*3) as u64);
+        outFile.write(&lengthBuf[..]);
 
-                for i in 0..3 {
-                    println!("{} {} {}", lod.vertices[i].p[0], lod.vertices[i].p[1], lod.vertices[i].p[2]);
-                    println!("{} {} {}", lod.vertices[i].n[0], lod.vertices[i].n[1], lod.vertices[i].n[2]);
-                }
-
-                use byteorder::{LittleEndian, WriteBytesExt};
-
-                let mut buffer=vec![];
-                use byteorder::{BigEndian, ReadBytesExt};
-
-                buffer.write_u64::<LittleEndian>(lod.vertices.len() as u64);
-                for v in lod.vertices.iter(){
-                    buffer.write_f32::<LittleEndian>(v.p[0]);
-                    buffer.write_f32::<LittleEndian>(v.p[1]);
-                    buffer.write_f32::<LittleEndian>(v.p[2]);
-                    buffer.write_f32::<LittleEndian>(v.n[0]);
-                    buffer.write_f32::<LittleEndian>(v.n[1]);
-                    buffer.write_f32::<LittleEndian>(v.n[2]);
-                    buffer.write_f32::<LittleEndian>(v.tc[0]);
-                    buffer.write_f32::<LittleEndian>(v.tc[1]);
-                }
-
-                buffer.write_u8(b'\n');
-
-                outFile.write(&buffer[..]);
-            },
-            Geometry::P3N3 { ref material, ref lod } => {
-                for i in 0..3 {
-                    println!("{} {} {}", lod.vertices[i].p[0], lod.vertices[i].p[1], lod.vertices[i].p[2]);
-                    println!("{} {} {}", lod.vertices[i].n[0], lod.vertices[i].n[1], lod.vertices[i].n[2]);
-                }
-
-                use byteorder::{LittleEndian, WriteBytesExt};
-
-                let mut buffer=vec![];
-                use byteorder::{BigEndian, ReadBytesExt};
-
-                buffer.write_u64::<LittleEndian>(lod.vertices.len() as u64);
-                for v in lod.vertices.iter(){
-                    buffer.write_f32::<LittleEndian>(v.p[0]);
-                    buffer.write_f32::<LittleEndian>(v.p[1]);
-                    buffer.write_f32::<LittleEndian>(v.p[2]);
-                    buffer.write_f32::<LittleEndian>(v.n[0]);
-                    buffer.write_f32::<LittleEndian>(v.n[1]);
-                    buffer.write_f32::<LittleEndian>(v.n[2]);
-                }
-
-                buffer.write_u8(b'\n');
-                //let nl=[b'\n'];
-                //buffer.write(&nl[..]);
-
-                outFile.write(&buffer[..]);
-            },
-            //_=>{},
-        }
+        outFile.write(&geometry.data[..]);
     }
-    */
 
     Ok(())
 }

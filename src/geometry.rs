@@ -15,9 +15,9 @@ pub enum ConvertTo{
 }
 
 pub struct Geometry{
-    material:Option<String>,
-    data:Vec<u8>,
-    polygonsCount:usize,
+    pub material:Option<String>,
+    pub data:Vec<u8>,
+    pub polygonsCount:usize,
 }
 
 impl Geometry{
@@ -307,21 +307,17 @@ impl Geometry{
                             let mut convertAsList=Vec::new();
                             for &(source, ignore) in sourcesList.iter() {
                                 if ignore {
-                                    for sourceData in source.data.iter() {
-                                        convertAsList.push(None);
-                                    }
+                                    convertAsList.push(None);
                                 }else{
-                                    for sourceData in source.data.iter() {
-                                        match convertTOSemanticIter.next() {
-                                            Some( t ) => {
-                                                match t{
-                                                    "f32" => convertAsList.push( Some((sourceData, ConvertTo::to_f32)) ),
-                                                    "i32" => convertAsList.push( Some((sourceData, ConvertTo::to_i32)) ),
-                                                    _ => return Err( String::from("tmperr") ),
-                                                }
-                                            },
-                                            None => {},
-                                        }
+                                    match convertTOSemanticIter.next() {
+                                        Some( t ) => {
+                                            match t{
+                                                "f32" => convertAsList.push( Some((source, ConvertTo::to_f32)) ),
+                                                "i32" => convertAsList.push( Some((source, ConvertTo::to_i32)) ),
+                                                _ => return Err( String::from("tmperr") ),
+                                            }
+                                        },
+                                        None => {},
                                     }
                                 }
                             }
@@ -358,43 +354,43 @@ impl Geometry{
         Ok(geometries)
     }
 
-    pub fn constructTriangles(convertAsList:Vec< Option<(&SourceData, ConvertTo)> >, polygonIndexes:Vec<usize>, polygonsCount:usize) -> Result<Geometry, String>{
-        if convertAsList.len()*polygonsCount*3 != polygonIndexes.len() {
-            println!("{} {} {}",convertAsList.len(), polygonsCount, polygonIndexes.len());
-            return Err( String::from("convertAsList.len()*polygonsCount*3 != polygonIndexes.len()") );
+    pub fn constructTriangles(convertAsList:Vec< Option<(&Source, ConvertTo)> >, polygonIndexes:Vec<usize>, polygonsCount:usize) -> Result<Geometry, String>{
+        if convertAsList.len()*polygonsCount*GeometryType::Triangles.vertices() != polygonIndexes.len() {
+            return Err( String::from("convertAsList.len()*polygonsCount*GeometryType::Triangles.vertices() != polygonIndexes.len()") );
         }
-
 
         let mut geometryData=Vec::with_capacity(convertAsList.len()*polygonsCount*3*4);
 
         let mut piIter=polygonIndexes.iter();
 
-        for i in 0..polygonsCount*3{
+        for i in 0..polygonsCount*GeometryType::Triangles.vertices(){
             for convertAs in convertAsList.iter() {
                 match *convertAs {
-                    Some( (sourceData, ref convertTo) ) => {
+                    Some( (source, ref convertTo) ) => {
                         let index=match piIter.next(){
                             Some( i ) => i.clone(),
                             None => return Err(String::from("Unexpected end of polygon indexes")),
                         };
 
-                        match *sourceData{
-                            SourceData::Float( _ , ref data) => {
-                                match *convertTo {
-                                    ConvertTo::to_f32 =>
-                                        geometryData.write_f32::<LittleEndian>(data[index]).unwrap(),
-                                    ConvertTo::to_i32 =>
-                                        geometryData.write_i32::<LittleEndian>(data[index] as i32).unwrap(),
-                                }
-                            },
-                            SourceData::Int( _ , ref data) => {
-                                match *convertTo {
-                                    ConvertTo::to_f32 =>
-                                        geometryData.write_f32::<LittleEndian>(data[index] as f32).unwrap(),
-                                    ConvertTo::to_i32 =>
-                                        geometryData.write_i32::<LittleEndian>(data[index]).unwrap(),
-                                }
-                            },
+                        for sourceData in source.data.iter(){
+                            match *sourceData{
+                                SourceData::Float( _ , ref data) => {
+                                    match *convertTo {
+                                        ConvertTo::to_f32 =>
+                                            geometryData.write_f32::<LittleEndian>(data[index]).unwrap(),
+                                        ConvertTo::to_i32 =>
+                                            geometryData.write_i32::<LittleEndian>(data[index] as i32).unwrap(),
+                                    }
+                                },
+                                SourceData::Int( _ , ref data) => {
+                                    match *convertTo {
+                                        ConvertTo::to_f32 =>
+                                            geometryData.write_f32::<LittleEndian>(data[index] as f32).unwrap(),
+                                        ConvertTo::to_i32 =>
+                                            geometryData.write_i32::<LittleEndian>(data[index]).unwrap(),
+                                    }
+                                },
+                            }
                         }
                     },
                     None => {
