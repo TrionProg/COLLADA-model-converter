@@ -230,9 +230,10 @@ pub fn convertModel( inFileName:String, outFileName:String ) -> Result<(), Strin
     let mut lengthBuf=vec![];
 
     lengthBuf.write_u64::<LittleEndian>(geometries.len() as u64);
-    outFile.write(&lengthBuf[..]);
+    //outFile.write(&lengthBuf[..]);
 
     for geometry in geometries.iter(){
+        let mut lengthBuf=vec![];
         lengthBuf.write_u64::<LittleEndian>((geometry.polygonsCount*3) as u64);
         outFile.write(&lengthBuf[..]);
 
