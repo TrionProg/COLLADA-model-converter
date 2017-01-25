@@ -46,10 +46,22 @@ pub struct Lod<V>{
 }
 */
 
-pub struct Mesh{
+use LOD;
+
+pub enum GeometryType{
+    Lines,
+    Triangles,
+}
+
+pub struct Mesh<V>{
     //material:String,
     name:String,
+    geometry_type:GeometryType;
+    lods:Vec<LOD<V>>,
     //geometryType
     //vertexFormat:String,
     //lods:Lod<V>,
 }
+
+impl<V> Mesh<V>{
+    

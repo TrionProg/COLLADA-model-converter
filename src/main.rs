@@ -109,14 +109,29 @@ fn main() {
 */
 extern crate collada;
 
+mod error;
+pub use error::Error;
+
+mod lod;
+pub use lod::LOD;
+
+mod mesh;
+pub use mesh::{Mesh,GeometryType};
+
+mod model;
+pub use model::Model;
+
 use std::path::Path;
 
+//TODO:load from collada as new implementations;
+
 fn main(){
-    let document=match collada::Document::parse(&Path::new("a2.dae")){
+    let model=match Model::from_collada(&Path::new("a2.dae")){
         Ok(d) => d,
         Err(e) => panic!("{}",e),
     };
 
+    /*
     document.print_tree();
 
     let scene=document.scenes.get("Scene").unwrap();
@@ -133,5 +148,6 @@ fn main(){
     };
     let vertex_index=polygon.first_vertex_index+1;
     println!("Y coord is {}",source_data[position.indexes[vertex_index]]);
+    */
 
 }
