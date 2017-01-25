@@ -4,8 +4,4 @@ version = "0.1.0"
 authors = ["trionprog <trionprog@gmail.com>"]
 
 [dependencies]
-xml-rs = "*"
-bincode = "*"
-byteorder = "*"
-bincode_ext = "*"
-rustc-serialize = "*"
+collada = { path = "../collada" }

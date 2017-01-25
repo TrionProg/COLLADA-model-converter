@@ -1,3 +1,4 @@
+/*
 pub enum GeometryType{
     Triangles
 }
@@ -43,10 +44,12 @@ pub struct Lod<V>{
     pub distance:f32,
     pub vertices:Vec<V>,
 }
+*/
 
-pub struct Mesh<V>{
+pub struct Mesh{
+    //material:String,
     name:String,
     //geometryType
-    vertexFormat:String,
-    lods:Lod<V>,
+    //vertexFormat:String,
+    //lods:Lod<V>,
 }
