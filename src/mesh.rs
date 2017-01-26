@@ -47,6 +47,7 @@ pub struct Lod<V>{
 */
 
 use LOD;
+use collada;
 
 pub enum GeometryType{
     Lines,
@@ -56,12 +57,18 @@ pub enum GeometryType{
 pub struct Mesh<V>{
     //material:String,
     name:String,
-    geometry_type:GeometryType;
+    geometry_type:GeometryType,
     lods:Vec<LOD<V>>,
     //geometryType
     //vertexFormat:String,
     //lods:Lod<V>,
 }
 
-impl<V> Mesh<V>{
-    
+//impl<V> Mesh<V>{
+
+pub struct VirtualMesh<'a>{
+    pub name:String,
+    pub full_semantics:String,
+    pub lods:Vec<Option<&'a collada::Mesh>>,
+    pub vertex_count_per_polygon:usize,
+}

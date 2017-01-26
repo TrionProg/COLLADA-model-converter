@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.78.0 commit date:2016-10-24, commit time:12:20, hash:e8299c8</authoring_tool>
     </contributor>
-    <created>2017-01-25T21:44:40</created>
-    <modified>2017-01-25T21:44:40</modified>
+    <created>2017-01-25T23:35:45</created>
+    <modified>2017-01-25T23:35:45</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -572,14 +572,29 @@
     <visual_scene id="Scene_300" name="Scene_300">
       <node id="Camera_003" name="Camera_003" type="NODE">
         <matrix sid="transform">0.6859207 -0.3240135 0.6515582 7.481132 0.7276763 0.3054208 -0.6141704 -6.50764 0 0.8953956 0.4452714 5.343665 0 0 0 1</matrix>
+        <translate sid="location">7.481132 -6.50764 5.343665</translate>
+        <rotate sid="rotationZ">0 0 1 46.69194</rotate>
+        <rotate sid="rotationY">0 1 0 0</rotate>
+        <rotate sid="rotationX">1 0 0 63.5593</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_camera url="#Camera_003-camera"/>
       </node>
       <node id="Lamp_001" name="Lamp_001" type="NODE">
         <matrix sid="transform">-0.2908646 -0.7711008 0.5663932 4.076245 0.9551712 -0.1998834 0.2183912 1.005454 -0.05518906 0.6045247 0.7946723 5.903862 0 0 0 1</matrix>
+        <translate sid="location">4.076245 1.005454 5.903862</translate>
+        <rotate sid="rotationZ">0 0 1 106.9363</rotate>
+        <rotate sid="rotationY">0 1 0 3.163707</rotate>
+        <rotate sid="rotationX">1 0 0 37.26105</rotate>
+        <scale sid="scale">1 0.9999999 1</scale>
         <instance_light url="#Lamp_001-light"/>
       </node>
       <node id="Cylinder_000_001" name="Cylinder_000_001" type="NODE">
         <matrix sid="transform">0.8653238 0 0 -0.1213369 0 0.8653238 0 2.155728 0 0 0.8653238 2.606696 0 0 0 1</matrix>
+        <translate sid="location">-0.1213369 2.155728 2.606696</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 0</rotate>
+        <rotate sid="rotationX">1 0 0 0</rotate>
+        <scale sid="scale">0.8653238 0.8653238 0.8653238</scale>
         <instance_geometry url="#Cylinder_010-mesh" name="Cylinder_000_001">
           <bind_material>
             <technique_common>
@@ -590,6 +605,11 @@
       </node>
       <node id="WFR_001" name="WFR_001" type="NODE">
         <matrix sid="transform">1.94707e-7 -1.34359e-7 1 4.016164 0 1 1.34359e-7 3.281775 -1 -2.61607e-14 1.94707e-7 1.00957 0 0 0 1</matrix>
+        <translate sid="location">4.016164 3.281775 1.00957</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 89.99999</rotate>
+        <rotate sid="rotationX">1 0 0 -7.6982e-6</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_geometry url="#Cylinder_009-mesh" name="WFR_001">
           <bind_material>
             <technique_common>
@@ -600,6 +620,11 @@
       </node>
       <node id="body_001" name="body_001" type="NODE">
         <matrix sid="transform">7.54979e-8 1.34359e-7 -1 0 0 1 1.34359e-7 0 1 -1.01438e-14 7.54979e-8 0 0 0 0 1</matrix>
+        <translate sid="location">0 0 0</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 -90</rotate>
+        <rotate sid="rotationX">1 0 0 -7.69821e-6</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_geometry url="#Cylinder_006-mesh" name="body_001">
           <bind_material>
             <technique_common>
@@ -611,10 +636,20 @@
       </node>
       <node id="Camera_002" name="Camera_002" type="NODE">
         <matrix sid="transform">-0.8154924 -0.2577086 0.5182261 9.424796 0.5787676 -0.3631156 0.7301883 12.95185 1.65362e-7 0.8953955 0.4452715 8.375287 0 0 0 1</matrix>
+        <translate sid="location">9.424796 12.95185 8.375287</translate>
+        <rotate sid="rotationZ">0 0 1 144.6361</rotate>
+        <rotate sid="rotationY">0 1 0 -9.47453e-6</rotate>
+        <rotate sid="rotationX">1 0 0 63.55929</rotate>
+        <scale sid="scale">0.9999999 0.9999999 1</scale>
         <instance_camera url="#Camera_002-camera"/>
       </node>
       <node id="WFR_001_001" name="WFR_001_001" type="NODE">
         <matrix sid="transform">1.94707e-7 -1.34359e-7 1 4.016164 0 1 1.34359e-7 -3.230006 -1 -2.61607e-14 1.94707e-7 1.00957 0 0 0 1</matrix>
+        <translate sid="location">4.016164 -3.230006 1.00957</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 89.99999</rotate>
+        <rotate sid="rotationX">1 0 0 -7.6982e-6</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_geometry url="#Cylinder_005-mesh" name="WFR_001_001">
           <bind_material>
             <technique_common>
@@ -625,6 +660,11 @@
       </node>
       <node id="WFR_002_001" name="WFR_002_001" type="NODE">
         <matrix sid="transform">3.13916e-7 1.50996e-7 -1 -3.960099 0 -1 -1.50996e-7 -3.23001 -1 4.74001e-14 -3.13916e-7 1.00957 0 0 0 1</matrix>
+        <translate sid="location">-3.960099 -3.23001 1.00957</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 89.99998</rotate>
+        <rotate sid="rotationX">1 0 0 180</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_geometry url="#Cylinder_002-mesh" name="WFR_002_001">
           <bind_material>
             <technique_common>
@@ -635,6 +675,11 @@
       </node>
       <node id="WFR_003_001" name="WFR_003_001" type="NODE">
         <matrix sid="transform">7.54979e-8 1.50996e-7 -1 -3.960099 0 -1 -1.50996e-7 3.24975 -1 1.13999e-14 -7.54979e-8 1.00957 0 0 0 1</matrix>
+        <translate sid="location">-3.960099 3.24975 1.00957</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 90</rotate>
+        <rotate sid="rotationX">1 0 0 180</rotate>
+        <scale sid="scale">1 1 1</scale>
         <instance_geometry url="#Cylinder_001-mesh" name="WFR_003_001">
           <bind_material>
             <technique_common>
@@ -645,6 +690,11 @@
       </node>
       <node id="Cylinder_003_001" name="Cylinder_003_001" type="NODE">
         <matrix sid="transform">0.8653238 0 0 -0.1213369 0 0.8653238 0 2.155728 0 0 0.8653238 2.606696 0 0 0 1</matrix>
+        <translate sid="location">-0.1213369 2.155728 2.606696</translate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <rotate sid="rotationY">0 1 0 0</rotate>
+        <rotate sid="rotationX">1 0 0 0</rotate>
+        <scale sid="scale">0.8653238 0.8653238 0.8653238</scale>
         <instance_geometry url="#Cylinder_000-mesh" name="Cylinder_003_001">
           <bind_material>
             <technique_common>
