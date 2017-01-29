@@ -120,7 +120,7 @@ impl<'a>Cursor<'a>{
                         self.lex=Lexeme::NewLine;
                         self.nextChar();
                     },
-                    '{' | '}' | '[' | ']' => {
+                    '{' | '}' | '[' | ']' | '(' | ')' => {
                         self.lex=Lexeme::Bracket(self.curChar);
                         self.nextChar();
                     },

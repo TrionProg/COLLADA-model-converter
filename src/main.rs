@@ -121,7 +121,7 @@ mod source;
 pub use source::{VirtualSource,VirtualSourceLayer};
 
 mod lod;
-pub use lod::LOD;
+pub use lod::{LOD,VirtualLOD};
 
 mod mesh;
 pub use mesh::VirtualMesh;//{Mesh,GeometryType};

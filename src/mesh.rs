@@ -123,9 +123,11 @@ pub trait Mesh{
 
 //impl<V> Mesh<V>{
 
+use VirtualLOD;
+
 pub struct VirtualMesh<'a>{
     pub name:String,
     pub full_semantics:String,
-    pub lods:Vec<Option<&'a collada::Mesh>>,
+    pub lods:Vec<VirtualLOD<'a>>,
     pub vertex_count_per_polygon:usize,
 }

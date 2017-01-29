@@ -8,21 +8,33 @@ use std::rc::Rc;
 use collada;
 
 //use Mesh;
-use mesh::VirtualMesh;
+use VirtualMesh;
+use VirtualLOD;
 
 pub struct Model{
     //meshes:HashMap<String, Mesh>,
 }
 
+//TODO add names for meshes to print them in error like GeomID.index
+
 impl Model{
     pub fn from_collada(file_name:&Path) -> Result<Model,Error>{
-        let document=match Document::parse(file_name){
+        let document=match collada::Document::parse(file_name){
             Ok(d) => d,
             Err(e) => return Err(Error::ColladaError(e)),
         };
 
-        let lods_from_scenes=Self::generate_lods_from_scenes(&document)?;
-        let virtual_meshes=Self::generate_virtual_meshes(&lods_from_scenes)?;
+        let virtual_meshes=Self::generate_virtual_meshes(&document)?;
+
+        for (name,vm) in virtual_meshes.iter(){
+            println!("{} . {}",name,vm.lods.len());
+            for lod in vm.lods.iter(){
+                println!("d:{}",lod.distance);
+                for source in lod.sources.iter(){
+                    println!("{}",source.layers.len());
+                }
+            }
+        }
 
         /*
         let mut lods_of_meshes=HashMap::new();
@@ -66,80 +78,47 @@ impl Model{
         Ok(Model{/*meshes:HashMap::new()*/})
     }
 
-    pub fn generate_virtual_meshes(document:&collada::Document
+    pub fn generate_virtual_meshes<'a>(document:&'a collada::Document) -> Result<HashMap<String,VirtualMesh<'a>>,Error>{
+        let (scene_name,scene)=match document.scenes.iter().next(){
+            Some( (scene_name,scene) ) => (scene_name,scene),
+            None => return Err(Error::Other( String::from("Collada document has no scenes") )),
+        };
 
-    pub fn generate_lods_from_scenes(document:&Document) -> Result<Vec<(f32,&Rc<Scene>)>,Error>{
-        let mut lods_from_scenes=Vec::with_capacity(document.scenes.len());
-        let mut is_lod_without_distance=false;
-
-        println!("{}",document.scenes.len());
-
-        for (_,scene) in document.scenes.iter(){
-            let distance=match scene.name.find("_d:"){
-                Some( pos ) => {
-                    let (node_name, wast_and_distance)=scene.name.split_at(pos);
-                    let (wast,distance_str)=wast_and_distance.split_at("_d:".len());
-
-                    match distance_str.parse::<f32>(){
-                        Ok(d) => d,
-                        Err(_) => return Err(Error::StringParseError( format!("Can not parse {} as f32",distance_str) )),
-                    }
-                },
-                None => {
-                    if is_lod_without_distance {
-                        return Err(Error::Other( format!("Scene \"{}\" has no distance it should be like \"{}_200\"",&scene.name,&scene.name) ));
-                    }
-
-                    is_lod_without_distance=true;
-
-                    0.0
-                },
-            };
-
-            lods_from_scenes.push((distance, scene));
-        }
-
-        if lods_from_scenes.len()==0 {
-            return Err( Error::Other( String::from("This model has no scenes") ) );
-        }
-
-        lods_from_scenes.sort_by(|lod1,lod2| lod1.0.partial_cmp(&lod2.0).unwrap());
-
-        if lods_from_scenes[0].0!=0.0 {
-            return Err( Error::Other( String::from("One scene must have 0 distance") ) );
-        }
-
-        for (lod1,lod2) in lods_from_scenes.iter().zip(lods_from_scenes.iter().skip(1)){
-            if lod1.0==lod2.0 {
-                return Err( Error::Other( format!("Scene \"{}\" has same distance loke \"{}\"", lod1.1.name, lod2.1.name) ) );
-            }
-        }
-
-        Ok(lods_from_scenes)
-    }
-
-    pub fn generate_virtual_meshes<'a>(lods_from_scenes:&'a Vec<(f32,&Rc<Scene>)>) -> Result<HashMap<String,VirtualMesh<'a>>,Error>{
         let mut virtual_meshes=HashMap::new();
 
-        let scene=&lods_from_scenes[0].1;
-
-        for (_,node) in scene.geometries.iter(){
+        for (node_name, node) in scene.geometries.iter(){
             let geometry=&node.joined;
+
+            let (node_name, distance)=match geometry.name.find("_d:"){
+                Some( pos ) => {
+                    let (node_name, wast_and_distance)=geometry.name.split_at(pos);
+                    let (wast,distance_str)=wast_and_distance.split_at("_d:".len());
+
+                    let distance=match distance_str.parse::<f32>(){
+                        Ok(d) => d,
+                        Err(_) => return Err(Error::StringParseError( format!("Can not parse {} as f32",distance_str) )),
+                    };
+
+                    (String::from(node_name), distance)
+                },
+                None =>
+                    (node_name.clone(),0.0),
+            };
 
             for (i,mesh) in geometry.meshes.iter().enumerate(){
                 let mesh_name=if geometry.meshes.len()==1 {
-                    node.name.clone()
+                    node_name.clone()
                 }else{
                     match mesh.material{
-                        Some( ref material ) =>
-                            format!("{} m:{}",&node.name, material),
+                        Some( ref material_id ) =>
+                            format!("{}_{}",node_name,material_id),
                         None =>
-                            format!("{} #{}",&node.name, i),
+                            format!("{} #{}",node_name, i),
                     }
                 };
 
                 if mesh.polygons.len()==0 {
-                    return Err( Error::Other(format!("Mesh \"{}\" has no polygons",&mesh_name)) );
+                    return Err(Error::Other( format!("Mesh {} of geometry\"{}\" has no polygons",i,geometry.name) ));
                 }
 
                 let vertex_count_per_polygon=mesh.polygons[0].vertices_count;
@@ -150,12 +129,12 @@ impl Model{
                     }
                 }
 
+                let virtual_lod=VirtualLOD::construct(&mesh, distance, &String::from("VERTEX:(X:integer,Y:integer) NORMAL:(X:float,Y:float)"))?;
+
                 match virtual_meshes.entry(mesh_name.clone()){
                     Entry::Vacant(entry) => {
-                        let mut lods=Vec::with_capacity(lods_from_scenes.len());
-                        lods.resize(lods_from_scenes.len(),None);
-
-                        lods[0]=Some(mesh);
+                        let mut lods=Vec::with_capacity(1);
+                        lods.push(virtual_lod);
 
                         entry.insert(
                             VirtualMesh{
@@ -167,55 +146,21 @@ impl Model{
                         );
                     },
                     Entry::Occupied(mut entry) =>
-                        return Err( Error::Other(format!("Mesh \"{}\" already exists!", &mesh_name)) ),
+                        entry.get_mut().lods.push(virtual_lod),
                 }
             }
         }
 
-        for (lod_index,&(distance,scene)) in lods_from_scenes.iter().enumerate().skip(1){
-            println!("{}",distance);
-            for (_,node) in scene.geometries.iter(){
-                let geometry=&node.joined;
+        for (_,virtual_mesh) in virtual_meshes.iter_mut(){
+            virtual_mesh.lods.sort_by(|lod1,lod2| lod1.distance.partial_cmp(&lod2.distance).unwrap());
 
-                for (i,mesh) in geometry.meshes.iter().enumerate(){
-                    let mesh_name=if geometry.meshes.len()==1 {
-                        node.name.clone()
-                    }else{
-                        match mesh.material{
-                            Some( ref material ) =>
-                                format!("{} m:{}",&node.name, material),
-                            None =>
-                                format!("{} #{}",&node.name, i),
-                        }
-                    };
+            if virtual_mesh.lods[0].distance!=0.0 {
+                return Err( Error::Other( format!("Mesh \"{}\" must have LOD with 0 distance", virtual_mesh.name) ) );
+            }
 
-                    match virtual_meshes.get_mut(&mesh_name){
-                        Some( ref mut virtual_mesh ) => {
-                            if virtual_mesh.full_semantics.as_str()!=mesh.full_semantics.as_str() {
-                                return Err( Error::Other(format!("Mesh \"{}\" expects semantics \"{}\", but LOD {} has semantics \"{}\"",
-                                    virtual_mesh.name,
-                                    virtual_mesh.full_semantics,
-                                    distance,
-                                    mesh.full_semantics,
-                                )));
-                            }
-
-                            for polygon in mesh.polygons.iter().skip(1){
-                                if polygon.vertices_count!=virtual_mesh.vertex_count_per_polygon {
-                                    return Err( Error::Other(format!("Mesh \"{}\" expects {} vertices per polygon, but polygon with {} vertices has been found",virtual_mesh.name, virtual_mesh.vertex_count_per_polygon, polygon.vertices_count)) );
-                                }
-                            }
-
-                            match virtual_mesh.lods[lod_index] {
-                                Some(_) => return Err( Error::Other(format!("LOD {} of mesh \"{}\" already exists", distance, mesh_name)) ),
-                                None => {},
-                            }
-
-                            virtual_mesh.lods[lod_index]=Some(mesh);
-                        },
-                        None =>
-                            return Err( Error::Other(format!("Unknown mesh \"{}\" of LOD {}", mesh_name, distance)) ),
-                    }
+            for (lod1,lod2) in virtual_mesh.lods.iter().zip(virtual_mesh.lods.iter().skip(1)){
+                if lod1.distance==lod2.distance {
+                    return Err( Error::Other( format!("Mesh \"{}\" has LODS with same distance", virtual_mesh.name) ) );
                 }
             }
         }

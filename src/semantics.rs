@@ -16,6 +16,7 @@ pub struct SemanticsSourceLayer<'a>{
     pub layer_type:SemanticsSourceLayerType,
 }
 
+#[derive(Copy,Clone)]
 pub enum SemanticsSourceLayerType{
     Float,
     Int,
@@ -31,13 +32,17 @@ impl<'a> Semantics<'a>{
             match cursor.next()?{
                 Lexeme::EOF => break,
                 Lexeme::String(source_name) => {
+                    if cursor.next()?!=Lexeme::Colon {
+                        return Err( Error::SemanticsParse(format!("Expected ':', but {} has been found", cursor.lex.print())) );
+                    }
+
                     let is_index=match cursor.next()?{
                         Lexeme::Ampersand => { cursor.next()?; true},
                         _ => false,
                     };
 
                     if cursor.lex!=Lexeme::Bracket('(') {
-                        return Err( Error::SemanticsParse(format!("Expected (, but {} has been found", cursor.lex.print())) );
+                        return Err( Error::SemanticsParse(format!("Expected '(', but {} has been found", cursor.lex.print())) );
                     }
 
                     let mut layers=Vec::new();
