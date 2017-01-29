@@ -109,14 +109,22 @@ fn main() {
 */
 extern crate collada;
 
+mod lexer;
+
 mod error;
 pub use error::Error;
+
+mod semantics;
+pub use semantics::{Semantics,SemanticsSource,SemanticsSourceLayer,SemanticsSourceLayerType};
+
+mod source;
+pub use source::{VirtualSource,VirtualSourceLayer};
 
 mod lod;
 pub use lod::LOD;
 
 mod mesh;
-pub use mesh::{Mesh,GeometryType};
+pub use mesh::VirtualMesh;//{Mesh,GeometryType};
 
 mod model;
 pub use model::Model;

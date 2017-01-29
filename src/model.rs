@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::rc::Rc;
 
-use collada::{Document,Scene,Geometry};
+use collada;
 
-use Mesh;
+//use Mesh;
 use mesh::VirtualMesh;
 
 pub struct Model{
@@ -65,6 +65,8 @@ impl Model{
 
         Ok(Model{/*meshes:HashMap::new()*/})
     }
+
+    pub fn generate_virtual_meshes(document:&collada::Document
 
     pub fn generate_lods_from_scenes(document:&Document) -> Result<Vec<(f32,&Rc<Scene>)>,Error>{
         let mut lods_from_scenes=Vec::with_capacity(document.scenes.len());
